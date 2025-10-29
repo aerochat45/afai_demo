@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AF AI Helper</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 1028px;
+            height: 90vh;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            padding: 20px;
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ff4757;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.connected {
+            background: #2ed573;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 18px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e1e8ed;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.bot .message-content h1,
+        .message.bot .message-content h2,
+        .message.bot .message-content h3 {
+            margin: 10px 0 5px 0;
+            color: #4facfe;
+        }
+
+        .message.bot .message-content h1 {
+            font-size: 18px;
+        }
+
+        .message.bot .message-content h2 {
+            font-size: 16px;
+        }
+
+        .message.bot .message-content h3 {
+            font-size: 14px;
+        }
+
+        .message.bot .message-content ul,
+        .message.bot .message-content ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .message.bot .message-content li {
+            margin: 5px 0;
+        }
+
+        .message.bot .message-content code {
+            background: #f1f3f4;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            color: #d63384;
+        }
+
+        .message.bot .message-content pre {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 10px 0;
+            overflow-x: auto;
+        }
+
+        .message.bot .message-content pre code {
+            background: none;
+            padding: 0;
+            color: #333;
+        }
+
+        .message.bot .message-content blockquote {
+            border-left: 4px solid #4facfe;
+            padding-left: 15px;
+            margin: 10px 0;
+            font-style: italic;
+            color: #666;
+        }
+
+        .message.bot .message-content a {
+            color: #4facfe;
+            text-decoration: none;
+        }
+
+        .message.bot .message-content a:hover {
+            text-decoration: underline;
+        }
+
+        .message.bot .message-content strong {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .message.bot .message-content em {
+            font-style: italic;
+        }
+
+        .message-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin: 0 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            font-size: 14px;
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            order: 2;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e8ed;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+
+        .send-button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(79, 172, 254, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading-indicator {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading-dots {
+            display: inline-block;
+        }
+
+        .loading-dots span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #4facfe;
+            margin: 0 2px;
+            animation: loadingDots 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes loadingDots {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .error-message {
+            background: #ff4757;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 20px;
+            text-align: center;
+            animation: fadeInUp 0.3s ease;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .welcome-message h2 {
+            margin-bottom: 10px;
+            color: #4facfe;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                width: 100%;
+                height: 100vh;
+                border-radius: 0;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .chat-header h1 {
+                font-size: 20px;
+            }
+        }
+        .qa-response {
+            padding: 10px;
+            border-left: 3px solid #4CAF50;
+            background-color: #f9f9f9;
+            margin: 5px 0;
+        }
+
+        .qa-answer {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .qa-confidence {
+            color: #666;
+            font-style: italic;
+            margin: 8px 0;
+        }
+
+        .qa-sources {
+            margin-top: 10px;
+        }
+
+        .qa-sources ul {
+            padding-left: 20px;
+            margin: 5px 0;
+        }
+
+        .qa-document-link {
+            margin-top: 10px;
+        }
+
+        .qa-document-link a {
+            color: #2196F3;
+            text-decoration: none;
+        }
+
+        .qa-document-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AF AI Helper</h1>
+            <div class="status-indicator">
+                <span class="status-text">Connecting...</span>
+                <div class="status-dot" id="statusDot"></div>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h2>Welcome to AF AI Helper!</h2>
+                <p>I'm here to help you with any questions you might have. Just type your message below and press send.</p>
+            </div>
+        </div>
+        
+        <div class="loading-indicator" id="loadingIndicator">
+            <div class="loading-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <p style="margin-top: 10px; color: #666;">Thinking...</p>
+        </div>
+        
+        <div class="chat-input-container">
+            <input 
+                type="text" 
+                class="chat-input" 
+                id="chatInput" 
+                placeholder="Type your message here..." 
+                disabled
+            >
+            <button class="send-button" id="sendButton" disabled>
+                <span>Send</span>
+                <span>→</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        class ChatBot {
+            constructor() {
+                this.conversationKey = null;
+                this.isConnected = false;
+                this.apiBaseUrl = 'https://aerochat-staging.dummywebdemo.xyz/'; // Replace with your actual API base URL
+                // this.apiBaseUrl = 'http://localhost:5503/'; // Replace with your actual API base URL
+               // this.authToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2tleSI6IjQ1MWU3MDNmZGQzMmE2ZWE0NDkxYThhZTNmOTAwOTRkIn0.iboxPkuxLeQq14pbEiheFEZVOoUaXNubJVN_SbVOxm8'; // Replace with your actual JWT token
+                this.authToken='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2NvdW50X2tleSI6IjI1Zjg4Y2IwMDIzM2NkYTFhZDA3OTYwOTNhMDRhMTFlIn0.zRLtSsB4mbQwpRKTpj3Rrg1tQBzskpXLbbTT5w_pKUw';
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.loadingIndicator = document.getElementById('loadingIndicator');
+                this.statusDot = document.getElementById('statusDot');
+                this.statusText = document.querySelector('.status-text');
+                
+                this.initializeEventListeners();
+                this.connectAccount();
+            }
+
+            initializeEventListeners() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                this.chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+            }
+
+            async connectAccount() {
+                try {
+                    this.updateStatus('Connecting...', false);
+                    
+                    const response = await fetch(`${this.apiBaseUrl}/chat/api/v1/connectaccount`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.authToken}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    this.conversationKey = data.conversation_key;
+                    
+                    this.updateStatus('Connected', true);
+                    this.enableChat();
+                    
+                } catch (error) {
+                    console.error('Connection failed:', error);
+                    this.showError('Failed to connect to the server. Please check your API configuration.');
+                    this.updateStatus('Connection Failed', false);
+                }
+            }
+
+            updateStatus(text, connected) {
+                this.statusText.textContent = text;
+                this.statusDot.classList.toggle('connected', connected);
+                this.isConnected = connected;
+            }
+
+            enableChat() {
+                this.chatInput.disabled = false;
+                this.sendButton.disabled = false;
+                this.chatInput.focus();
+            }
+
+            async sendMessage() {
+                const query = this.chatInput.value.trim();
+                if (!query || !this.isConnected) return;
+
+                // Add user message to chat
+                this.addMessage(query, 'user');
+                this.chatInput.value = '';
+                this.showLoading(true);
+
+                try {
+                    const response = await fetch(`${this.apiBaseUrl}/chat/api/v1/conversation`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${this.authToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            conversation_key: this.conversationKey
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    // Format the QA response properly
+                    if (data.response && data.response.answer) {
+                        let formattedResponse = this.formatQAResponse(data.response, query);
+                        this.addMessage(formattedResponse, 'bot', false);
+                    } else if (data.answer) { // Handle alternative response format
+                        let formattedResponse = this.formatQAResponse(data, query);
+                        this.addMessage(formattedResponse, 'bot', false);
+                    } else {
+                        this.addMessage(data.response || data.message || 'Received an unexpected response format', 'bot');
+                    }
+                    
+                } catch (error) {
+                    console.error('Message failed:', error);
+                    this.addMessage(`Sorry, I encountered an error: ${error.message}`, 'bot');
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            formatQAResponse(responseData, originalQuery) {
+                // Clean the answer text more carefully
+                let cleanAnswer = responseData.answer
+                    .replace(/Unnamed: \d+: /g, '') // Remove column references
+                    .replace(/\s*\|\s*/g, ' | ') // Normalize pipe separators with single spaces
+                    .replace(/;\s*/g, '; ') // Normalize semicolon separators
+                    .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+                    .trim();
+
+                // Only split into separate lines if the content is clearly meant to be a list
+                if (cleanAnswer.includes(' | ') && cleanAnswer.split(' | ').length > 2) {
+                    cleanAnswer = cleanAnswer.replace(/ \| /g, '<br>• ');
+                    if (!cleanAnswer.startsWith('•')) {
+                        cleanAnswer = '• ' + cleanAnswer;
+                    }
+                }
+
+                // Deduplicate sources
+                const uniqueSources = [...new Set(responseData.sources)];
+                return `
+                    <div class="qa-response">
+                        <div class="qa-answer">
+                            <strong>Answer:</strong><br>
+                            ${cleanAnswer}
+                        </div>
+                        ${responseData.confidence ? `
+                        <div class="qa-confidence">
+                            Confidence: ${(responseData.confidence * 100).toFixed(1)}%
+                        </div>` : ''}
+                        <div class="qa-sources">
+                            <strong>Document References:</strong>
+                            <ul>
+                                ${uniqueSources.map(source => `<li>${source}</li>`).join('')}
+                            </ul>
+                        </div>
+                        ${responseData.document_link ? `
+                        <div class="qa-document-link">
+                            <a href="${responseData.document_link}" target="_blank">
+                                View Source Document (Page ${responseData.page_no || 'N/A'})
+                            </a>
+                        </div>` : ''}
+                    </div>
+                `;
+            }
+
+            addMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+                
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.textContent = sender === 'user' ? 'U' : 'AI';
+                
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                
+                if (sender === 'bot') {
+                    // Convert markdown to HTML for bot messages
+                    messageContent.innerHTML = this.markdownToHtml(content);
+                } else {
+                    // Keep user messages as plain text
+                    messageContent.textContent = content;
+                }
+                
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+                
+                // Remove welcome message if it exists
+                const welcomeMessage = this.chatMessages.querySelector('.welcome-message');
+                if (welcomeMessage) {
+                    welcomeMessage.remove();
+                }
+                
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            markdownToHtml(markdown) {
+                // If content is already formatted HTML (like QA responses), return as-is
+                if (markdown.includes('<div class="qa-response">')) {
+                    return markdown;
+                }
+
+                // For regular text responses, process markdown and wrap in paragraph
+                // Step 1: Protect URLs first by encoding them with a unique pattern
+                const urlRegex = /(https?:\/\/[^\s)]+)/g;
+                const urlPlaceholders = [];
+                
+                // Replace URLs with encoded placeholders that won't conflict with markdown
+                let html = markdown.replace(urlRegex, (match) => {
+                    const placeholder = `\uE000URL${urlPlaceholders.length}\uE001`;
+                    urlPlaceholders.push(match);
+                    return placeholder;
+                });
+
+                // Step 2: Process markdown formatting
+                // Headers (convert to bold for paragraph formatting)
+                html = html.replace(/^### (.*$)/gim, '<strong>$1</strong>');
+                html = html.replace(/^## (.*$)/gim, '<strong>$1</strong>');
+                html = html.replace(/^# (.*$)/gim, '<strong>$1</strong>');
+                
+                // Bold
+                html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+                
+                // Italic
+                html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                html = html.replace(/_(.*?)_/g, '<em>$1</em>');
+                
+                // Code
+                html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Lists (convert to line breaks with bullets)
+                html = html.replace(/^([*\-+]) (.+)$/gm, '• $2');
+                html = html.replace(/^\d+\. (.+)$/gm, '• $1');
+                
+                // Links - handle both regular links and our protected URLs
+                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+                    if (url.startsWith('\uE000URL') && url.endsWith('\uE001')) {
+                        const index = parseInt(url.match(/\uE000URL(\d+)\uE001/)[1]);
+                        return `<a href="${urlPlaceholders[index]}" target="_blank">${text}</a>`;
+                    }
+                    return `<a href="${url}" target="_blank">${text}</a>`;
+                });
+                
+                // Step 3: Restore protected URLs
+                urlPlaceholders.forEach((url, index) => {
+                    html = html.replace(`\uE000URL${index}\uE001`, url);
+                });
+
+                // Step 4: Handle line breaks properly within paragraph
+                html = html.replace(/\n\s*\n/g, '<br><br>') // Double line breaks
+                    .replace(/\n/g, '<br>') // Single line breaks
+                    .replace(/<br>\s*<br>\s*<br>/g, '<br><br>') // Limit consecutive breaks
+                    .trim();
+                
+                // Wrap the entire content in a paragraph tag
+                return `<p>${html}</p>`;
+            }
+
+            showLoading(show) {
+                this.loadingIndicator.style.display = show ? 'block' : 'none';
+                this.sendButton.disabled = show || !this.isConnected;
+                if (show) {
+                    this.scrollToBottom();
+                }
+            }
+
+            showError(message) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'error-message';
+                errorDiv.textContent = message;
+                
+                this.chatMessages.appendChild(errorDiv);
+                this.scrollToBottom();
+                
+                // Remove error message after 5 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.parentNode.removeChild(errorDiv);
+                    }
+                }, 5000);
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+        }
+
+        // Initialize the chatbot when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChatBot();
+        });
+    </script>
+</body>
+</html>
